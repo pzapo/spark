@@ -8,10 +8,13 @@ class TrainValidationSplitSorted(TrainValidationSplit):
     chunks = 0
     spark = None
 
-    def __init__(self, chunks, spark):
+    def __init__(self, chunks=None, spark=None, estimator=None, estimatorParamMaps=None, evaluator=None,
+                 trainRatio=0.75,
+                 seed=None):
+        super().__init__(estimator=estimator, estimatorParamMaps=estimatorParamMaps, evaluator=evaluator,
+                         trainRatio=trainRatio, seed=seed)
         self.chunks = chunks
         self.spark = spark
-        super().__init__()
 
     def _fit(self, dataset):
         est = self.getOrDefault(self.estimator)
@@ -35,9 +38,9 @@ class TrainValidationSplitSorted(TrainValidationSplit):
         validation = validation.sort(validation.id.asc())
         train = train.sort(train.id.asc())
 
-        train.show(20)
-        print('#######################################################################')
-        validation.show(20)
+        # train.show(1400)
+        # print('#######################################################################')
+        # validation.show(1400)
         models = est.fit(train, epm)
         for j in range(numModels):
             model = models[j]

@@ -1,7 +1,8 @@
 import pandas as pd
+from pyspark.sql.functions import col
 
 
-def RSI(dataframe, window_length, avg_type, spark, column='Close'):
+def RSI(spark, dataframe, window_length, avg_type, column='Close'):
     data = dataframe.toPandas()
     # Get just the close
     close = data['Close']
@@ -25,12 +26,12 @@ def RSI(dataframe, window_length, avg_type, spark, column='Close'):
     RSI = pd.DataFrame({'RSI': RSI})
     data = data.join(RSI)
     result_df = spark.createDataFrame(data.round(3))
-    return result_df
+    return result_df.filter(result_df.RSI != "NaN")
 
 
 # Commodity Channel Index
-def CCI(spark_df, ndays, spark):
-    data = spark_df.toPandas()
+def CCI(spark, dataframe, ndays=14):
+    data = dataframe.toPandas()
     TP = (data['High'] + data['Low'] + data['Close']) / 3
     CCI = pd.Series(
         (TP - pd.rolling_mean(TP, ndays)) /
@@ -38,11 +39,13 @@ def CCI(spark_df, ndays, spark):
         name='CCI')
     data = data.join(CCI)
     result_df = spark.createDataFrame(data.round(3))
-    return result_df
+    result_df = result_df.select(
+        [col(c).cast('float') for c in result_df.columns])
+    return result_df.filter(result_df.CCI != "NaN")
 
 
 # Moving average convergence divergence
-def MACD(dataframe, spark, nfast=12, nslow=26, signal=9, column='Close'):
+def MACD(spark, dataframe, nfast=12, nslow=26, signal=9, column='Close'):
     data = dataframe.toPandas()
     # Get just the close
     price = data[column]
@@ -51,7 +54,37 @@ def MACD(dataframe, spark, nfast=12, nslow=26, signal=9, column='Close'):
     emafast = pd.ewma(price, span=nfast, min_periods=1)
     #     MACD = pd.DataFrame({'MACD': emafast-emaslow, 'emaSlw': emaslow, 'emaFst': emafast})
     MACD = pd.DataFrame({'MACD': emafast - emaslow})
-
     data = data.join(MACD.round(3))
     result_df = spark.createDataFrame(data)
-    return result_df
+    return result_df.select(
+        [col(c).cast('float') for c in result_df.columns])
+
+
+def OBV(spark, df):
+    temp_df = df.toPandas()
+    df_obv = spark.createDataFrame(
+        temp_df.assign(OBV=(temp_df.Volume * (
+            ~temp_df.Close.diff().le(0) * 2 - 1)).cumsum()))
+    df = df_obv.select(
+        [col(c).cast('float') for c in df_obv.columns])
+    return df
+
+
+def calc_ti(spark, df, DEBUG=False, MACD_i=True, CCI_i=True, OBV_i=True, RSI_i=True):
+    if MACD_i:
+        df = MACD(spark, df)
+        if DEBUG:
+            df.show()
+    if CCI_i:
+        df = CCI(spark, df)
+        if DEBUG:
+            df.show()
+    if OBV_i:
+        df = OBV(spark, df)
+        if DEBUG:
+            df.show()
+    if RSI_i:
+        df = RSI(spark, df, 3, 'EWMA')
+        if DEBUG:
+            df.show()
+    return df

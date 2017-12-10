@@ -7,7 +7,7 @@ def calc_metrics(df, simple_mode=True):
     metrics_dict = {}
     # Overall statistics
     precision = metrics.precision()
-    metrics_dict['precision'] = precision
+    metrics_dict['accuracy'] = precision
     recall = metrics.recall()
     metrics_dict['recall'] = recall
     f1Score = metrics.fMeasure()

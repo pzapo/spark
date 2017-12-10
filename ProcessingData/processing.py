@@ -100,9 +100,9 @@ def train_test_split(spark, df, CHUNKS, SORT, ManualSplit, RANDOM_SEED):
             train = train.union(p)
         test = spark.createDataFrame(data=dfp[-1].round(3))
     else:
-        train, test = df.randomSplit([0.85, 0.15], seed=RANDOM_SEED)
+        train, test = df.randomSplit([0.7, 0.3], seed=RANDOM_SEED)
 
-    print("We have %d training examples and %d test examples." % (train.count(),
+    print("We have %d training examples and %d test examples. \n" % (train.count(),
                                                                   test.count()))
     if SORT:
         test = test.sort(test.id.asc())

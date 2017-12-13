@@ -4,7 +4,6 @@ from pyspark.sql import functions as F
 from pyspark.sql.functions import monotonically_increasing_id, udf, split
 from pyspark.sql.types import IntegerType
 
-from Helpers.generated_features import features_from_OHLC
 from Helpers.technical_indicators import calc_ti
 from Helpers.udf import profit_
 
@@ -100,7 +99,7 @@ def train_test_split(spark, df, CHUNKS, SORT, ManualSplit, RANDOM_SEED):
             train = train.union(p)
         test = spark.createDataFrame(data=dfp[-1].round(3))
     else:
-        train, test = df.randomSplit([0.7, 0.3], seed=RANDOM_SEED)
+        train, test = df.randomSplit([0.9, 0.1], seed=RANDOM_SEED)
 
     print("We have %d training examples and %d test examples. \n" % (train.count(),
                                                                   test.count()))
@@ -112,7 +111,7 @@ def train_test_split(spark, df, CHUNKS, SORT, ManualSplit, RANDOM_SEED):
 
 def complete_processing(spark, path):
     df = initial_processing(spark=spark, path_to_csv=path)
-    df = features_from_OHLC(spark=spark, spark_df=df)
+    # df = features_from_OHLC(spark=spark, spark_df=df)
     df = calc_profit(df=df)
     df = calc_ti(spark, df)
     return df

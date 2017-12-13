@@ -64,7 +64,7 @@ def OBV(spark, df):
     temp_df = df.toPandas()
     df_obv = spark.createDataFrame(
         temp_df.assign(OBV=(temp_df.Volume * (
-            ~temp_df.Close.diff().le(0) * 2 - 1)).cumsum()))
+                ~temp_df.Close.diff().le(0) * 2 - 1)).cumsum()))
     df = df_obv.select(
         [col(c).cast('float') for c in df_obv.columns])
     return df
@@ -87,4 +87,4 @@ def calc_ti(spark, df, DEBUG=False, MACD_i=True, CCI_i=True, OBV_i=True, RSI_i=T
         df = RSI(spark, df, 3, 'EWMA')
         if DEBUG:
             df.show()
-    return df
+    return df.drop('Open', 'High', 'Close', 'Low')

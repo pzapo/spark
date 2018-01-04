@@ -2,12 +2,15 @@ import numpy as np
 from pyspark.sql import Window
 from pyspark.sql import functions as F
 from pyspark.sql.functions import monotonically_increasing_id, udf, split
-from pyspark.sql.types import IntegerType
+from pyspark.sql.types import IntegerType, DoubleType
 
+from Helpers.generated_features import features_from_OHLC
 from Helpers.technical_indicators import calc_ti
-from Helpers.udf import profit_
-
+from Helpers.udf import profit_, ReverseTradeClassifier, BuyAndHoldClassifier
+from pyspark.sql.functions import col
 profit_udf = udf(profit_, IntegerType())
+BHC = udf(BuyAndHoldClassifier, DoubleType())
+RC = udf(ReverseTradeClassifier, DoubleType())
 
 
 def initial_processing(spark, path_to_csv):
@@ -49,6 +52,43 @@ def calc_profit(df):
     df_shifted_profit = df_profit.withColumn(
         'Profit',
         F.lag(df_profit['Profit'], count=-1).over(Window.orderBy("id")))
+
+    final_df = df_shifted_profit.filter(df_shifted_profit.Profit.isNotNull())
+
+    final_df = final_df.drop("Daily return")
+    final_df = final_df.drop("prev_day_price")
+    return final_df
+
+def calc_profit2(df):
+    '''
+    Creating new column with shifted Close price by 1 day
+    Profit label calculation
+    1 if stock risen up, 0 is it went down
+    :param df:
+    :return:
+    '''
+    df_daily_return = df.withColumn('prev_day_price',
+                                    F.lag(df['Close']).over(
+                                        Window.orderBy("id")))
+    df_daily_return = df_daily_return.filter(
+        df_daily_return.prev_day_price.isNotNull())
+
+    df_profit = df_daily_return.withColumn(
+        'Profit', profit_udf(df_daily_return.Close,
+                             df_daily_return.prev_day_price))
+
+
+    df_profit = df_profit.withColumn(
+        'prediction', RC(df_profit.Profit))
+
+    # df_profit = df_profit.withColumn(
+    #     'prediction', BHC(df_profit.Profit, F.lag(df_profit['Profit']).over(
+    #         Window.orderBy("id"))))
+    df_shifted_profit = df_profit.withColumn(
+        'Profit',
+        F.lag(df_profit['Profit'], count=-1).over(Window.orderBy("id")))
+
+    
 
     final_df = df_shifted_profit.filter(df_shifted_profit.Profit.isNotNull())
 
@@ -99,10 +139,10 @@ def train_test_split(spark, df, CHUNKS, SORT, ManualSplit, RANDOM_SEED):
             train = train.union(p)
         test = spark.createDataFrame(data=dfp[-1].round(3))
     else:
-        train, test = df.randomSplit([0.9, 0.1], seed=RANDOM_SEED)
+        train, test = df.randomSplit([0.7, 0.3], seed=RANDOM_SEED)
 
     print("We have %d training examples and %d test examples. \n" % (train.count(),
-                                                                  test.count()))
+                                                                     test.count()))
     if SORT:
         test = test.sort(test.id.asc())
         train = train.sort(train.id.asc())
@@ -111,7 +151,15 @@ def train_test_split(spark, df, CHUNKS, SORT, ManualSplit, RANDOM_SEED):
 
 def complete_processing(spark, path):
     df = initial_processing(spark=spark, path_to_csv=path)
-    # df = features_from_OHLC(spark=spark, spark_df=df)
+    df = features_from_OHLC(spark=spark, spark_df=df)
     df = calc_profit(df=df)
     df = calc_ti(spark, df)
+    return df
+
+
+def simple_processing(spark, path):
+    df = initial_processing(spark=spark, path_to_csv=path)
+    df = calc_profit2(df=df)
+    df = df.select(
+        [col(c).cast('float') for c in df.columns])
     return df

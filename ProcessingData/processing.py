@@ -23,7 +23,7 @@ def initial_processing(spark, path_to_csv):
     :return:
     '''
     fresh_df = spark.read.csv(path_to_csv, header=True, inferSchema=True)
-    fresh_df = fresh_df.filter(fresh_df.Open != "null")
+   # fresh_df = fresh_df.filter(fresh_df.Open != "null")
     processed_df = fresh_df.select(fresh_df["Open"].cast("float"),
                                    fresh_df["High"].cast("float"), fresh_df["Volume"].cast("int"),
                                    fresh_df["Low"].cast("float"), fresh_df["Close"].cast("float"))
@@ -141,8 +141,7 @@ def train_test_split(spark, df, CHUNKS, SORT, ManualSplit, RANDOM_SEED):
     else:
         train, test = df.randomSplit([0.7, 0.3], seed=RANDOM_SEED)
 
-    print("We have %d training examples and %d test examples. \n" % (train.count(),
-                                                                     test.count()))
+    # print("We have %d training examples and %d test examples. \n" % (train.count(), test.count()))
     if SORT:
         test = test.sort(test.id.asc())
         train = train.sort(train.id.asc())
@@ -151,7 +150,7 @@ def train_test_split(spark, df, CHUNKS, SORT, ManualSplit, RANDOM_SEED):
 
 def complete_processing(spark, path):
     df = initial_processing(spark=spark, path_to_csv=path)
-    df = features_from_OHLC(spark=spark, spark_df=df)
+    # df = features_from_OHLC(spark=spark, spark_df=df)
     df = calc_profit(df=df)
     df = calc_ti(spark, df)
     return df

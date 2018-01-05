@@ -87,4 +87,4 @@ def calc_ti(spark, df, DEBUG=False, MACD_i=True, CCI_i=True, OBV_i=True, RSI_i=T
         df = RSI(spark, df, 3, 'EWMA')
         if DEBUG:
             df.show()
-    return df.drop('Open', 'High', 'Close', 'Low')
+    return df

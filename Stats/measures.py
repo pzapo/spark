@@ -6,13 +6,17 @@ def best_par(best_classifier):
     print("Maximal depth is " + str(best_classifier.getMaxDepth()))
     max_depth = best_classifier.getMaxDepth()
 
+    # Min infoGain
+    print("Minimal info gain is " + str(
+        best_classifier.getMinInfoGain()))
+    minInfoGain = best_classifier.getMinInfoGain()
+
     # Min instances
     print("Minimal instances per node is " + str(
         best_classifier.getMinInstancesPerNode()))
     min_instancesPerNode = best_classifier.getMinInstancesPerNode()
 
-    return (max_depth, min_instancesPerNode)
-
+    return (max_depth, min_instancesPerNode, minInfoGain    )
 
 def calc_metrics(df, simple_mode=True):
     rdd = df.select("prediction", "Profit").rdd
@@ -39,20 +43,24 @@ def calc_metrics(df, simple_mode=True):
 
     metrics_dict['precision'] = precision
 
-    # print(metrics_dict)
-    print("Summary Stats")
-    print(metrics.confusionMatrix())
+
+     # print(metrics_dict)
+    # print("Summary Stats")
+    # print(metrics.confusionMatrix())
     metrics_dict['confusionMatrix'] = metrics.confusionMatrix()
     # print("Accuracy = %.4f" % precision)
     # print("Recall = %.4f" % recall)
     # print("F1 Score = %.4f" % f1Score)
 
-    print("accuracy ", accuracy)
-    print("sensitivity ", sensitivity)
-    print("specificity ", specificity)
-    print("precision ", precision)
+    # print("accuracy ", accuracy)
+    # print("sensitivity ", sensitivity)
+    # print("specificity ", specificity)
+    # print("precision ", precision)
 
-
+    print("{},{},{},{}".format( accuracy, sensitivity, specificity, precision))
+    # print("sensitivity ", sensitivity)
+    # print("specificity ", specificity)
+    # print("precision ", precision)
 
     if not simple_mode:
         # Statistics by class

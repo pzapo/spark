@@ -57,7 +57,7 @@ def calc_metrics(df, simple_mode=True):
     # print("specificity ", specificity)
     # print("precision ", precision)
 
-    print("{},{},{},{}".format( accuracy, sensitivity, specificity, precision))
+    print("{},{},{},{}".format( round(accuracy,3),round(sensitivity,3),round(specificity,3),round(precision,3)))
     # print("sensitivity ", sensitivity)
     # print("specificity ", specificity)
     # print("precision ", precision)

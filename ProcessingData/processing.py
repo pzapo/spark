@@ -150,7 +150,7 @@ def train_test_split(spark, df, CHUNKS, SORT, ManualSplit, RANDOM_SEED):
 
 def complete_processing(spark, path):
     df = initial_processing(spark=spark, path_to_csv=path)
-    # df = features_from_OHLC(spark=spark, spark_df=df)
+    df = features_from_OHLC(spark=spark, spark_df=df)
     df = calc_profit(df=df)
     df = calc_ti(spark, df)
     return df

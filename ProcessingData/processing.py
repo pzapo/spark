@@ -8,6 +8,7 @@ from Helpers.generated_features import features_from_OHLC
 from Helpers.technical_indicators import calc_ti
 from Helpers.udf import profit_, ReverseTradeClassifier, BuyAndHoldClassifier
 from pyspark.sql.functions import col
+
 profit_udf = udf(profit_, IntegerType())
 BHC = udf(BuyAndHoldClassifier, DoubleType())
 RC = udf(ReverseTradeClassifier, DoubleType())
@@ -23,7 +24,8 @@ def initial_processing(spark, path_to_csv):
     :return:
     '''
     fresh_df = spark.read.csv(path_to_csv, header=True, inferSchema=True)
-   # fresh_df = fresh_df.filter(fresh_df.Open != "null")
+    if ("Orlen" or "OrlenVerify") in path_to_csv:
+        fresh_df = fresh_df.filter(fresh_df.Open != "null")
     processed_df = fresh_df.select(fresh_df["Open"].cast("float"),
                                    fresh_df["High"].cast("float"), fresh_df["Volume"].cast("int"),
                                    fresh_df["Low"].cast("float"), fresh_df["Close"].cast("float"))
@@ -59,6 +61,7 @@ def calc_profit(df):
     final_df = final_df.drop("prev_day_price")
     return final_df
 
+
 def calc_profit2(df):
     '''
     Creating new column with shifted Close price by 1 day
@@ -77,7 +80,6 @@ def calc_profit2(df):
         'Profit', profit_udf(df_daily_return.Close,
                              df_daily_return.prev_day_price))
 
-
     df_profit = df_profit.withColumn(
         'prediction', RC(df_profit.Profit))
 
@@ -87,8 +89,6 @@ def calc_profit2(df):
     df_shifted_profit = df_profit.withColumn(
         'Profit',
         F.lag(df_profit['Profit'], count=-1).over(Window.orderBy("id")))
-
-    
 
     final_df = df_shifted_profit.filter(df_shifted_profit.Profit.isNotNull())
 
@@ -120,7 +120,7 @@ def transform_date(df):
     return df.drop("Date")
 
 
-def train_test_split(spark, df, CHUNKS, SORT, ManualSplit, RANDOM_SEED):
+def train_test_split(spark, df, train_fold, test_fold, SORT, ManualSplit, RANDOM_SEED, DEBUG=False):
     '''
     :param spark:
     :param df:
@@ -129,19 +129,27 @@ def train_test_split(spark, df, CHUNKS, SORT, ManualSplit, RANDOM_SEED):
     :param ManualSplit - Manual split for training and validating data
     :return:
     '''
+    test_fold+=1
     df = df.sort(df.id.asc())
     if ManualSplit:
         dfp = df.toPandas()
-        dfp = np.array_split(dfp, CHUNKS)
+        dfp = np.array_split(dfp, train_fold + test_fold)
+        t = 0
         train = spark.createDataFrame(data=dfp[0].round(3))
-        for i in range(1, len(dfp) - 1):
+        for i in range(0, train_fold):
             p = spark.createDataFrame(data=dfp[i].round(3))
             train = train.union(p)
+            t += 1
+
         test = spark.createDataFrame(data=dfp[-1].round(3))
+        for j in range(-2, -test_fold, -1):
+            q = spark.createDataFrame(data=dfp[j].round(3))
+            test = test.union(q)
     else:
         train, test = df.randomSplit([0.7, 0.3], seed=RANDOM_SEED)
 
-    # print("We have %d training examples and %d test examples. \n" % (train.count(), test.count()))
+    if DEBUG:
+        print("We have %d training examples and %d test examples. \n" % (train.count(), test.count()))
     if SORT:
         test = test.sort(test.id.asc())
         train = train.sort(train.id.asc())
@@ -150,9 +158,10 @@ def train_test_split(spark, df, CHUNKS, SORT, ManualSplit, RANDOM_SEED):
 
 def complete_processing(spark, path):
     df = initial_processing(spark=spark, path_to_csv=path)
-    df = features_from_OHLC(spark=spark, spark_df=df)
+    # df = features_from_OHLC(spark=spark, spark_df=df)
     df = calc_profit(df=df)
-    df = calc_ti(spark, df)
+    # df = calc_ti(spark, df)
+    # return df.drop('High','Low','Close','Open')
     return df
 
 

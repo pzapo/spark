@@ -16,7 +16,13 @@ def best_par(best_classifier):
         best_classifier.getMinInstancesPerNode()))
     min_instancesPerNode = best_classifier.getMinInstancesPerNode()
 
-    return (max_depth, min_instancesPerNode, minInfoGain    )
+    # Min instances
+    print("Impurity is " + str(
+        best_classifier.getImpurity()))
+    impurity = best_classifier.getImpurity()
+
+    return (max_depth, min_instancesPerNode, minInfoGain, impurity)
+
 
 def calc_metrics(df, simple_mode=True):
     rdd = df.select("prediction", "Profit").rdd
@@ -43,8 +49,7 @@ def calc_metrics(df, simple_mode=True):
 
     metrics_dict['precision'] = precision
 
-
-     # print(metrics_dict)
+    # print(metrics_dict)
     # print("Summary Stats")
     # print(metrics.confusionMatrix())
     metrics_dict['confusionMatrix'] = metrics.confusionMatrix()
@@ -57,7 +62,7 @@ def calc_metrics(df, simple_mode=True):
     # print("specificity ", specificity)
     # print("precision ", precision)
 
-    print("{},{},{},{}".format( round(accuracy,3),round(sensitivity,3),round(specificity,3),round(precision,3)))
+    print("{},{},{},{}".format(round(accuracy, 3), round(sensitivity, 3), round(specificity, 3), round(precision, 3)))
     # print("sensitivity ", sensitivity)
     # print("specificity ", specificity)
     # print("precision ", precision)
@@ -94,6 +99,3 @@ def calc_metrics(df, simple_mode=True):
         # metrics_dict['weightedFalsePositiveRate'] = weightedFalsePositiveRate
         print("\n")
     return metrics_dict
-
-
-

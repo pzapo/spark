@@ -23,7 +23,7 @@ def getRandomForestwithGrid(num_Trees=25, max_Bins=500, max_Depth_Range=[8], min
 
 def getDecisonTreewithGrid(max_Bins=200, max_Depth_Range=[8], min_infoGain=[0], min_InstancesPerNode=[1]):
     classifier = DecisionTreeClassifier(
-        labelCol='Profit', featuresCol="features", maxBins=max_Bins)
+        labelCol='Profit', featuresCol="features", maxBins=max_Bins, cacheNodeIds=True,maxMemoryInMB=4096)
     paramGrid = ParamGridBuilder() \
         .addGrid(classifier.maxDepth, max_Depth_Range) \
         .addGrid(classifier.minInfoGain, min_infoGain) \

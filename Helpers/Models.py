@@ -2,10 +2,11 @@ from pyspark.ml.classification import LinearSVC, RandomForestClassifier, Decisio
 from pyspark.ml.tuning import ParamGridBuilder
 
 
-def getSVMwithGrid(max_Iter=[10], reg_Param=[0.5]):
+def getSVMwithGrid(max_Iter=[10], reg_Param=[0.5], aggregation_Depth = [2]):
     classifier = LinearSVC(labelCol='Profit', featuresCol="features")
     paramGrid = ParamGridBuilder() \
         .addGrid(classifier.maxIter, max_Iter) \
+        .addGrid(classifier.aggregationDepth, aggregation_Depth) \
         .addGrid(classifier.regParam, reg_Param).build()
     return (classifier, paramGrid)
 

@@ -8,13 +8,14 @@ class TrainValidationSplitSorted(TrainValidationSplit):
     chunks = 0
     spark = None
 
-    def __init__(self, chunks=None, spark=None, estimator=None, estimatorParamMaps=None, evaluator=None,
+    def __init__(self, spark=None, estimator=None, estimatorParamMaps=None, evaluator=None,
                  trainRatio=0.75,
-                 seed=None):
+                 seed=None, train_fold=None,test_fold=None):
         super().__init__(estimator=estimator, estimatorParamMaps=estimatorParamMaps, evaluator=evaluator,
                          trainRatio=trainRatio, seed=seed)
-        self.chunks = chunks
         self.spark = spark
+        self.test_fold = test_fold
+        self.train_fold = train_fold
 
     def _fit(self, dataset):
         est = self.getOrDefault(self.estimator)
@@ -28,15 +29,25 @@ class TrainValidationSplitSorted(TrainValidationSplit):
         metrics = [0.0] * numModels
         condition = (df[randCol] >= tRatio)
 
+        train_fold = self.train_fold
+        test_fold = self.test_fold
+
+        test_fold += 1
+        df = df.sort(df.id.asc())
+
         dfp = df.toPandas()
-        dfp = np.array_split(dfp, self.chunks)
+        dfp = np.array_split(dfp, train_fold + test_fold)
+        t = 0
         train = self.spark.createDataFrame(data=dfp[0].round(3))
-        for i in range(1, len(dfp) - 1):
+        for i in range(0, train_fold):
             p = self.spark.createDataFrame(data=dfp[i].round(3))
             train = train.union(p)
+            t += 1
+
         validation = self.spark.createDataFrame(data=dfp[-1].round(3))
-        validation = validation.sort(validation.id.asc())
-        train = train.sort(train.id.asc())
+        for j in range(-2, -test_fold, -1):
+            q = self.spark.createDataFrame(data=dfp[j].round(3))
+            test = validation.union(q)
 
         # train.show(1400)
         # print('#######################################################################')

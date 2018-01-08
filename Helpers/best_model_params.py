@@ -27,5 +27,8 @@ DecisionTreeClassificationModel.getImpurity = (
 LinearSVCModel.getRegParam = (
     lambda self: self._java_obj.getRegParam())
 
-LinearSVCModel.getmaxIter = (
-    lambda self: self._java_obj.getmaxIter())
+LinearSVCModel.getMaxIter = (
+    lambda self: self._java_obj.getMaxIter())
+
+LinearSVCModel.getAggregationDepth = (
+    lambda self: self._java_obj.getAggregationDepth())

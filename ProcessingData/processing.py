@@ -146,7 +146,7 @@ def train_test_split(spark, df, train_fold, test_fold, SORT, ManualSplit, RANDOM
             q = spark.createDataFrame(data=dfp[j].round(3))
             test = test.union(q)
     else:
-        train, test = df.randomSplit([0.7, 0.3], seed=RANDOM_SEED)
+        train, test = df.randomSplit([0.2, 0.8], seed=RANDOM_SEED)
 
     if DEBUG:
         print("We have %d training examples and %d test examples. \n" % (train.count(), test.count()))
@@ -158,9 +158,9 @@ def train_test_split(spark, df, train_fold, test_fold, SORT, ManualSplit, RANDOM
 
 def complete_processing(spark, path):
     df = initial_processing(spark=spark, path_to_csv=path)
-    # df = features_from_OHLC(spark=spark, spark_df=df)
+    df = features_from_OHLC(spark=spark, spark_df=df)
     df = calc_profit(df=df)
-    # df = calc_ti(spark, df)
+    df = calc_ti(spark, df)
     # return df.drop('High','Low','Close','Open')
     return df
 

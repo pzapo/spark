@@ -1,29 +1,6 @@
 from pyspark.mllib.evaluation import MulticlassMetrics
 
 
-def best_par(best_classifier):
-    # Max depth
-    print("Maximal depth is " + str(best_classifier.getMaxDepth()))
-    max_depth = best_classifier.getMaxDepth()
-
-    # Min infoGain
-    print("Minimal info gain is " + str(
-        best_classifier.getMinInfoGain()))
-    minInfoGain = best_classifier.getMinInfoGain()
-
-    # Min instances
-    print("Minimal instances per node is " + str(
-        best_classifier.getMinInstancesPerNode()))
-    min_instancesPerNode = best_classifier.getMinInstancesPerNode()
-
-    # Min instances
-    print("Impurity is " + str(
-        best_classifier.getImpurity()))
-    impurity = best_classifier.getImpurity()
-
-    return (max_depth, min_instancesPerNode, minInfoGain, impurity)
-
-
 def calc_metrics(df, simple_mode=True):
     rdd = df.select("prediction", "Profit").rdd
     metrics = MulticlassMetrics(rdd)
@@ -98,4 +75,41 @@ def calc_metrics(df, simple_mode=True):
         # print("Weighted F(1) Score = %.4f" % weightedFalsePositiveRate)
         # metrics_dict['weightedFalsePositiveRate'] = weightedFalsePositiveRate
         print("\n")
+    return metrics_dict
+
+
+def get_metrics(df, lower_bound, upper_bound = 1.0):
+    rdd = df.select("prediction", "Profit").rdd
+    metrics = MulticlassMetrics(rdd)
+    metrics_dict = {}
+    cm = metrics.confusionMatrix().toArray()
+
+    TP = cm[0][0]
+    TN = cm[1][1]
+    FP = cm[0][1]
+    FN = cm[1][0]
+
+    accuracy = (TP + TN) / cm.sum()
+    if accuracy < lower_bound or accuracy > upper_bound:
+        return None
+    sensitivity = (TP) / (TP + FN)
+    specificity = (TN) / (TN + FP)
+    precision = (TP) / (TP + FP)
+
+    # Overall statistics
+    metrics_dict['accuracy'] = accuracy
+
+    metrics_dict['sensitivity'] = sensitivity
+
+    metrics_dict['specificity'] = specificity
+
+    metrics_dict['precision'] = precision
+
+    # print("Summary Stats")
+    # print(metrics.confusionMatrix())
+    metrics_dict['confusionMatrix'] = metrics.confusionMatrix()
+
+    print(
+        "{},{},{},{}".format(round(accuracy, 3), round(sensitivity, 3), round(specificity, 3), round(precision, 3)))
+
     return metrics_dict

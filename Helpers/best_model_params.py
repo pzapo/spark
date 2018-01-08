@@ -32,3 +32,6 @@ LinearSVCModel.getMaxIter = (
 
 LinearSVCModel.getAggregationDepth = (
     lambda self: self._java_obj.getAggregationDepth())
+
+LinearSVCModel.getThreshold = (
+    lambda self: self._java_obj.getThreshold())

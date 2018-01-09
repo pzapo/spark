@@ -24,6 +24,9 @@ DecisionTreeClassificationModel.getMinInfoGain = (
 DecisionTreeClassificationModel.getImpurity = (
     lambda self: self._java_obj.getImpurity())
 
+DecisionTreeClassificationModel.getMaxBins = (
+    lambda self: self._java_obj.getMaxBins())
+
 LinearSVCModel.getRegParam = (
     lambda self: self._java_obj.getRegParam())
 

@@ -43,12 +43,14 @@ def calc_profit(df):
     :return:
     '''
     df_daily_return = df.withColumn('prev_day_price',
-                                    F.lag(df['Close']).over(
+                                    F.lag(df['Open']).over(
                                         Window.orderBy("id")))
+
     df_daily_return = df_daily_return.filter(
         df_daily_return.prev_day_price.isNotNull())
+
     df_profit = df_daily_return.withColumn(
-        'Profit', profit_udf(df_daily_return.Close,
+        'Profit', profit_udf(df_daily_return.Open,
                              df_daily_return.prev_day_price))
 
     df_shifted_profit = df_profit.withColumn(
@@ -59,6 +61,7 @@ def calc_profit(df):
 
     final_df = final_df.drop("Daily return")
     final_df = final_df.drop("prev_day_price")
+
     return final_df
 
 
@@ -71,21 +74,23 @@ def calc_profit2(df):
     :return:
     '''
     df_daily_return = df.withColumn('prev_day_price',
-                                    F.lag(df['Close']).over(
+                                    F.lag(df['Open']).over(
                                         Window.orderBy("id")))
+
     df_daily_return = df_daily_return.filter(
         df_daily_return.prev_day_price.isNotNull())
 
     df_profit = df_daily_return.withColumn(
-        'Profit', profit_udf(df_daily_return.Close,
+        'Profit', profit_udf(df_daily_return.Open,
                              df_daily_return.prev_day_price))
-
-    df_profit = df_profit.withColumn(
-        'prediction', RC(df_profit.Profit))
 
     # df_profit = df_profit.withColumn(
     #     'prediction', BHC(df_profit.Profit, F.lag(df_profit['Profit']).over(
     #         Window.orderBy("id"))))
+
+    df_profit = df_profit.withColumn(
+        'prediction', RC(df_profit.Profit))
+
     df_shifted_profit = df_profit.withColumn(
         'Profit',
         F.lag(df_profit['Profit'], count=-1).over(Window.orderBy("id")))
@@ -120,7 +125,7 @@ def transform_date(df):
     return df.drop("Date")
 
 
-def train_test_split(spark, df, train_fold, test_fold, SORT, ManualSplit, RANDOM_SEED, DEBUG=False):
+def train_test_split(spark, df, train_fold, test_fold, manual_split, random_seed):
     '''
     :param spark:
     :param df:
@@ -129,30 +134,29 @@ def train_test_split(spark, df, train_fold, test_fold, SORT, ManualSplit, RANDOM
     :param ManualSplit - Manual split for training and validating data
     :return:
     '''
-    test_fold+=1
     df = df.sort(df.id.asc())
-    if ManualSplit:
+    if manual_split:
         dfp = df.toPandas()
         dfp = np.array_split(dfp, train_fold + test_fold)
-        t = 0
         train = spark.createDataFrame(data=dfp[0].round(3))
-        for i in range(0, train_fold):
+        for i in range(1, train_fold):
             p = spark.createDataFrame(data=dfp[i].round(3))
             train = train.union(p)
-            t += 1
-
         test = spark.createDataFrame(data=dfp[-1].round(3))
-        for j in range(-2, -test_fold, -1):
+        for j in range(-2, -test_fold - 1, -1):
             q = spark.createDataFrame(data=dfp[j].round(3))
             test = test.union(q)
-    else:
-        train, test = df.randomSplit([0.2, 0.8], seed=RANDOM_SEED)
-
-    if DEBUG:
-        print("We have %d training examples and %d test examples. \n" % (train.count(), test.count()))
-    if SORT:
+        # Sorting
         test = test.sort(test.id.asc())
         train = train.sort(train.id.asc())
+    else:
+        train, test = df.randomSplit([0.7, 0.3], seed=random_seed)
+    # print("We have %d training examples and %d test examples. \n" % (train.count(), test.count()))
+    return train, test
+
+
+def validate(df, random_seed):
+    train, test = df.randomSplit([0.6, 0.4], seed=random_seed)
     return train, test
 
 
@@ -161,8 +165,8 @@ def complete_processing(spark, path):
     df = features_from_OHLC(spark=spark, spark_df=df)
     df = calc_profit(df=df)
     df = calc_ti(spark, df)
-    # return df.drop('High','Low','Close','Open')
-    return df
+    return df.drop('High', 'Low', 'Close', 'Open')
+    # return df
 
 
 def simple_processing(spark, path):

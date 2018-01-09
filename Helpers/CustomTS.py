@@ -28,30 +28,27 @@ class TrainValidationSplitSorted(TrainValidationSplit):
         df = dataset.select("*", rand(seed).alias(randCol))
         metrics = [0.0] * numModels
         condition = (df[randCol] >= tRatio)
-
         train_fold = self.train_fold
         test_fold = self.test_fold
 
-        test_fold += 1
         df = df.sort(df.id.asc())
-
         dfp = df.toPandas()
         dfp = np.array_split(dfp, train_fold + test_fold)
-        t = 0
         train = self.spark.createDataFrame(data=dfp[0].round(3))
-        for i in range(0, train_fold):
+        for i in range(1, train_fold):
             p = self.spark.createDataFrame(data=dfp[i].round(3))
             train = train.union(p)
-            t += 1
-
         validation = self.spark.createDataFrame(data=dfp[-1].round(3))
-        for j in range(-2, -test_fold, -1):
+        for j in range(-2, -test_fold-1, -1):
             q = self.spark.createDataFrame(data=dfp[j].round(3))
-            test = validation.union(q)
+            validation = validation.union(q)
+        validation = validation.sort(validation.id.asc())
+        train = train.sort(train.id.asc())
 
-        # train.show(1400)
+        # train.select(train.id).show(14000)
         # print('#######################################################################')
-        # validation.show(1400)
+        # validation.select(validation.id).show(14000)
+
         models = est.fit(train, epm)
         for j in range(numModels):
             model = models[j]

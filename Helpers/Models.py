@@ -20,7 +20,7 @@ def get_best_svm(model):
     print(model.getRegParam())
     print(model.getMaxIter())
     print(model.getAggregationDepth())
-    print(model. getThreshold())
+    print(model.getThreshold())
     print("Coefs")
     print(model.intercept)
     for coef in model.coefficients:
@@ -55,7 +55,7 @@ def getDecisonTreewithGrid(max_Bins=200, max_Depth_Range=[8], min_infoGain=[0], 
     return classifier, paramGrid
 
 
-def tree_feature_importances(best_tree,featuresCols):
+def tree_feature_importances(best_tree, featuresCols):
     final_features = best_tree.featureImportances
     # Feature importance
     feature_dict = {}
@@ -90,8 +90,15 @@ def best_tree_par(best_tree):
         best_tree.getImpurity()))
     impurity = best_tree.getImpurity()
 
-    best_tree.write().overwrite().save("./Models/DD_MD_{}_MIG_{}_MIPN_{}_I_{}".format(max_depth,
-                                                                               minInfoGain,
-                                                                               min_instancesPerNode,
-                                                                               impurity))
+    # Min instances
+    print("MaxBins is " + str(
+        best_tree.getMaxBins()))
+    max_Bins = best_tree.getMaxBins()
+
+    best_tree.write().overwrite().save("./Models/DD_MD_{}_MIG_{}_MIPN_{}_I_{}_MB_{}".format(max_depth,
+                                                                                            minInfoGain,
+                                                                                            min_instancesPerNode,
+                                                                                            impurity,
+                                                                                            max_Bins))
+    
     return (max_depth, min_instancesPerNode, minInfoGain, impurity)

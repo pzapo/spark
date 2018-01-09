@@ -55,7 +55,7 @@ def getDecisonTreewithGrid(max_Bins=200, max_Depth_Range=[8], min_infoGain=[0], 
     return classifier, paramGrid
 
 
-def tree_feature_importances(best_tree, featuresCols):
+def tree_feature_importances(best_tree, featuresCols, threshold):
     final_features = best_tree.featureImportances
     # Feature importance
     feature_dict = {}
@@ -66,8 +66,15 @@ def tree_feature_importances(best_tree, featuresCols):
 
     i = 1
     for feature, importance in feature_dict.items():
-        print("{} ; {} ; {}".format(i, feature, round(importance, 3)))
-        i += 1
+        if importance > threshold:
+            print("{} , {} , {}".format(i, feature, round(importance, 3)))
+            i += 1
+
+    for feature, importance in feature_dict.items():
+        if importance < threshold:
+            print("\'{}\',".format(feature,end='',flush=True))
+
+
 
 
 def best_tree_par(best_tree):

@@ -12,6 +12,9 @@ RandomForestClassificationModel.getMinInfoGain = (
 RandomForestClassificationModel.getImpurity = (
     lambda self: self._java_obj.getImpurity())
 
+RandomForestClassificationModel.getMaxBins = (
+    lambda self: self._java_obj.getMaxBins())
+
 DecisionTreeClassificationModel.getMaxDepth = (
     lambda self: self._java_obj.getMaxDepth())
 

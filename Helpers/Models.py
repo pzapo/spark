@@ -15,7 +15,7 @@ def getSVMwithGrid(max_Iter=[10], reg_Param=[0.5], aggregation_Depth=[2], thresh
 
 
 def get_best_svm(model):
-    print(model.getRegParam())
+    print(model.intercept)
     # print(best_classifier.coefficients)
     print(model.getRegParam())
     print(model.getMaxIter())

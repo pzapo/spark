@@ -24,8 +24,8 @@ def initial_processing(spark, path_to_csv):
     :return:
     '''
     fresh_df = spark.read.csv(path_to_csv, header=True, inferSchema=True)
-    if ("Orlen" or "OrlenVerify") in path_to_csv:
-        fresh_df = fresh_df.filter(fresh_df.Open != "null")
+    # if ("Orlen" or "OrlenVerify") in path_to_csv:
+    # fresh_df = fresh_df.filter(fresh_df.Open != "null")
     processed_df = fresh_df.select(fresh_df["Open"].cast("float"),
                                    fresh_df["High"].cast("float"), fresh_df["Volume"].cast("int"),
                                    fresh_df["Low"].cast("float"), fresh_df["Close"].cast("float"))
@@ -156,17 +156,17 @@ def train_test_split(spark, df, train_fold, test_fold, manual_split, random_seed
 
 
 def validate(df, random_seed):
-    train, test = df.randomSplit([0.6, 0.4], seed=random_seed)
+    train, test = df.randomSplit([0.2, 0.8], seed=random_seed)
     return train, test
 
 
 def complete_processing(spark, path):
     df = initial_processing(spark=spark, path_to_csv=path)
-    df = features_from_OHLC(spark=spark, spark_df=df)
+    # df = features_from_OHLC(spark=spark, spark_df=df)
     df = calc_profit(df=df)
-    df = calc_ti(spark, df)
-    return df.drop('High', 'Low', 'Close', 'Open')
-    # return df
+    # df = calc_ti(spark, df)
+    # return df.drop('High', 'Low', 'Close', 'Open')
+    return df
 
 
 def simple_processing(spark, path):
